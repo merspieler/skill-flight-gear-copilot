@@ -1,14 +1,13 @@
-# FlightGear Copilot
+## flight-gear-copilot
+Copilot for FlightGear
 
+## Description 
 This skill acts as an copilot for flight gear that assists you by following your voice commands.
 
-## Current state
-UNUSABLE
-Working features:
- - Crashing
+This skill is still under development and not useable yet.
 
-Known issues:
- - ...
+## Examples 
+* "flaps 3"
+* "gear down"
 
-TODO:
- - ...
+## Credits 
