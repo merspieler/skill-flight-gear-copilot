@@ -1,0 +1,1 @@
+{"__mycroft_skill_firstrun": false, "host": "localhost", "port": 8081, "profiles": {"gear-retractable": "true", "acid": ["a320-200-cfm", "a320-200-iae"], "name": "A32X", "flaps": [{"max-spd": 350, "min-spd": 210, "id": "up"}, {"max-spd": 230, "min-spd": 190, "id": 1}]}}
