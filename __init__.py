@@ -13,6 +13,9 @@ LOGGER = getLogger(__name__)
 class FlightGearCopilotSkill(MycroftSkill):
 	def __init__(self):
 		super(FlightGearCopilotSkill, self).__init__()
+		self.settings['host'] = "localhost"
+		self.settings['port'] = 8081
+		# TODO add self.settings['profiles'] with default profiles (A32X and c172p)
 
 # DEFINITION of the settings['profiles'] structure
 # [
@@ -76,10 +79,12 @@ class FlightGearCopilotSkill(MycroftSkill):
 		# END DEMO DATA
 
 		# get acid
-		tn.write("get /sim/aircraft")
+		tn.write("get /sim/aircraft\r\n")
 		acid = tn.read_until("\n")
 
 		profile = None
+
+		# read acid to know which profile to use
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
 				if i_acid == acid:
@@ -146,16 +151,78 @@ class FlightGearCopilotSkill(MycroftSkill):
 #			#
 #########################
 
-	@intent_handler(IntentBuilder('GearIntent').require('gear'))
-	def handle_gear_intent(self, message):
-		gear_request = message.data['utterance']
-		if gear_request == "gear":
-			self.speak_dialog("no.gear.action")
+	@intent_handler(IntentBuilder('GearUpIntent').require('gearup'))
+	def handle_gear_up_intent(self, message):
+
+		# TODO add connection to fg
+		# TODO read acid from fg
+
+		# read acid to know which profile to use
+		for i_profiles in self.settings['profiles']:
+			for i_acid in i_profiles['acid']:
+				if i_acid == acid:
+					profile = i_profiles
+					break
+			if profile != None:
+				break
+
+		if profile == None:
+			# TODO when creation of profiles via voice is possible, add dialog how to
+			self.speak("Profile not found")
 			sys.exit(0)
 
-		match = re.match(r'.*gear.* (up|down|) +.*|.*(retract|extend) .*gear.*', gear_request, re.i)
+		if profile['gear-retractable'] == true:
+			# TODO set gear up in fg
+			self.speak("Gear up")
+		else:
+			self.speak_dialog("gear.not.retractable")
 
-		self.speak("Gear " + str(gear_request))
+	@intent_handler(IntentBuilder('GearDownIntent').require('geardown'))
+	def handle_gear_down_intent(self, message):
+
+		# TODO add connection to fg
+		# TODO read acid from fg
+
+		# read acid to know which profile to use
+		for i_profiles in self.settings['profiles']:
+			for i_acid in i_profiles['acid']:
+				if i_acid == acid:
+					profile = i_profiles
+					break
+			if profile != None:
+				break
+
+		if profile == None:
+			# TODO when creation of profiles via voice is possible, add dialog how to
+			self.speak("Profile not found")
+			sys.exit(0)
+
+		if profile['gear-retractable'] == true:
+			# TODO set gear down in fg
+			self.speak("Gear down")
+		else:
+			self.speak_dialog("gear.not.retractable")
+
+
+#################################################################
+#								#
+#			Checklists				#
+#								#
+#################################################################
+
+# TODO add all possible checklist
+# TODO make it possible, to play a .mp3 file instead of tts
+
+#########################
+#			#
+#	LDG Check	#
+#			#
+#########################
+
+	@intent_handler(IntentBuilder('LDGCheckIntent').require('ldgcheck'))
+	def handle_ldg_check_intent(self, message):
+		# TODO make checklist plane specific
+		self.speak("Landing no blue. . . Landing checklist completed")
 
 	def stop(self):
 		pass
