@@ -12,6 +12,9 @@ LOGGER = getLogger(__name__)
 class FlightGearCopilotSkill(MycroftSkill):
 	def __init__(self):
 		super(FlightGearCopilotSkill, self).__init__()
+		self.settings['host'] = "localhost"
+		self.settings['port'] = 8081
+		# TODO add self.settings['profiles'] with default profiles (A32X and c172p)
 
 # DEFINITION of the settings['profiles'] structure
 # [
@@ -187,6 +190,27 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("Gear down")
 		else:
 			self.speak_dialog("gear.not.retractable")
+
+
+#################################################################
+#								#
+#			Checklists				#
+#								#
+#################################################################
+
+# TODO add all possible checklist
+# TODO make it possible, to play a .mp3 file instead of tts
+
+#########################
+#			#
+#	LDG Check	#
+#			#
+#########################
+
+	@intent_handler(IntentBuilder('LDGCheckIntent').require('ldgcheck'))
+	def handle_ldg_check_intent(self, message):
+		# TODO make checklist plane specific
+		self.speak("Landing no blue. . . Landing checklist completed")
 
 	def stop(self):
 		pass
