@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+from telnetlib import Telnet
 
 from adapt.intent import IntentBuilder
 from mycroft import MycroftSkill, intent_handler
@@ -62,18 +63,23 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		flaps_request = match.group(1)
 
-		# TODO add connection to fg
+		try:
+			tn = Telnet(self.settings['host'], self.settings['port'])
+		except:
+			self.speak_dialog("no.telnet.con")
+			sys.exit(0)
+
+		tn.write("data\r\n")
 
 		# DEMO DATA
-		kias = 140
 		flaps = 2
-		acid = "a320-200-cfm"
 		# END DEMO DATA
 
+		# get acid
+		tn.write("get /sim/aircraft")
+		acid = tn.read_until("\n")
+
 		profile = None
-
-		# TODO read acid to know which profile to use
-
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
 				if i_acid == acid:
@@ -87,7 +93,10 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("Profile not found")
 			sys.exit(0)
 
-		# TODO read flaps and kias
+		tn.write("get /velocities/airspeed-kt\r\n")
+		kias = float(tn.read_until("\n"))
+
+		# TODO read flaps
 
 		o_flaps = None
 
