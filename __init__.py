@@ -247,7 +247,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		return tn
 
 	# exit routine to properly close the tn con
-	def exit(tn):
+	def exit(self, tn):
 		tn.close
 		sys.exit(0)
 
