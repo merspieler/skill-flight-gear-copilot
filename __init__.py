@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+from time import sleep
 from telnetlib import Telnet
 
 from adapt.intent import IntentBuilder
@@ -63,57 +64,52 @@ class FlightGearCopilotSkill(MycroftSkill):
 		if match == None:
 			self.speak_dialog("no.valid.flaps")
 			sys.exit(0)
-
 		flaps_request = match.group(1)
 
-		try:
-			tn = Telnet(self.settings['host'], self.settings['port'])
-		except:
-			self.speak_dialog("no.telnet.con")
-			sys.exit(0)
-
-		tn.write("data\r\n")
-
-		# DEMO DATA
-		flaps = 2
-		# END DEMO DATA
+		tn = self.connect()
 
 		# get acid
 		tn.write("get /sim/aircraft\r\n")
 		acid = tn.read_until("\n")
 
-		profile = None
-
 		# read acid to know which profile to use
+		profile = None
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
-				if i_acid == acid:
+				if str(i_acid) == str(acid):
 					profile = i_profiles
 					break
 			if profile != None:
 				break
 
+		# BYPASS THE PROFILE CHECK
+		# TODO REMOVE THIS BYPASS
+		profile = self.settings['profiles'][0]
+
+		# check if the profile was found
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
-			sys.exit(0)
+			self.exit(tn)
 
+		# get kias
 		tn.write("get /velocities/airspeed-kt\r\n")
 		kias = float(tn.read_until("\n"))
 
-		# TODO read flaps
-
-		o_flaps = None
-
 		# find the flaps value for the flaps id
+		o_flaps = None
 		for i_flaps in profile['flaps']:
 			if str(i_flaps['id']) == str(flaps_request):
 				o_flaps = i_flaps
 				break
 
+		# cheick if flaps setting is known
 		if o_flaps == None:
 			self.speak_dialog("flaps.setting.unknown")
-			sys.exit(0)
+			self.exit(tn)
+
+		tn.write("get " + str(profile['flaps-path']) + "\r\n")
+		flaps = tn.read_until("\n")
 
 		# check if extend or retract flaps
 		# TODO add handling up|down|full is already set
@@ -122,27 +118,38 @@ class FlightGearCopilotSkill(MycroftSkill):
 		elif str(flaps_request) == "up":
 			flaps_mov = "retract"
 		else:
-			if int(flaps_request) > o_flaps:
+			if int(flaps_request) > flaps:
 				flaps_mov = "extend"
-			elif int(flaps_request) < o_flaps:
+			elif int(flaps_request) < flaps:
 				flaps_mov = "retract"
 			else:
 				self.speak_dialog("keep.flaps")
-				sys.exit(0)
+				self.exit(tn)
 
-		# check if speed is high/low enough for retraction/extention
-		if flaps_mov == "extend":
-			if o_flaps['max-spd'] < kias:
-				self.speak_dialog("spd.high")
-				sys.exit(0)
-		else:
-			if o_flaps['min-spd'] > kias:
-				self.speak_dialog("spd.low")
-				sys.exit(0)
+		# get ground speed
+		tn.write("get /velocities/groundspeed-kt\r\n")
+		gs = float(tn.read_until("\n"))
+
+		# skip speed check is speed is <= 30
+		if gs > 30:
+			# check if speed is high/low enough for retraction/extention
+			if flaps_mov == "extend":
+				if o_flaps['max-spd'] < kias:
+					self.speak_dialog("spd.high")
+					self.exit(tn)
+				else:
+					self.speak("Speed checked.")
+			else:
+				if o_flaps['min-spd'] > kias:
+					self.speak_dialog("spd.low")
+					self.exit(tn)
+				else:
+					self.speak("Speed checked.")
 
 		# TODO set flaps in fg
 
-		self.speak("Speed checked. Flaps " + str(flaps_request))
+		self.speak("Flaps " + str(flaps_request))
+		tn.close
 
 
 #########################
@@ -169,7 +176,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
-			sys.exit(0)
+			self.exit(tn)
 
 		if profile['gear-retractable'] == true:
 			# TODO set gear up in fg
@@ -195,7 +202,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
-			sys.exit(0)
+			self.exit(tn)
 
 		if profile['gear-retractable'] == true:
 			# TODO set gear down in fg
@@ -222,7 +229,27 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('LDGCheckIntent').require('ldgcheck'))
 	def handle_ldg_check_intent(self, message):
 		# TODO make checklist plane specific
-		self.speak("Landing no blue. . . Landing checklist completed")
+		self.speak("Landing no blue")
+		sleep(5)
+		self.speak("Landing checklist completed")
+
+	# connect to fg
+	def connect(self):
+		try:
+			tn = Telnet(self.settings['host'], self.settings['port'])
+		except:
+			self.speak_dialog("no.telnet.con")
+			sys.exit(0)
+
+		# switch to data mode
+		tn.write("data\r\n")
+
+		return tn
+
+	# exit routine to properly close the tn con
+	def exit(tn):
+		tn.close
+		sys.exit(0)
 
 	def stop(self):
 		pass
