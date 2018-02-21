@@ -75,22 +75,17 @@ class FlightGearCopilotSkill(MycroftSkill):
 		tn = self.connect()
 
 		# get acid
-		tn.write("get /sim/aircraft\r\n")
-		acid = tn.read_until("\n")
+		acid = self.get_prop(tn, "/sim/aircraft")
 
 		# read acid to know which profile to use
 		profile = None
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
-				if str(i_acid) == str(acid):
+				if i_acid == acid:
 					profile = i_profiles
 					break
 			if profile != None:
 				break
-
-		# BYPASS THE PROFILE CHECK
-		# TODO REMOVE THIS BYPASS
-		profile = self.settings['profiles'][0]
 
 		# check if the profile was found
 		if profile == None:
@@ -99,8 +94,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.exit(tn)
 
 		# get kias
-		tn.write("get /velocities/airspeed-kt\r\n")
-		kias = float(tn.read_until("\n"))
+		kias = int(float(self.get_prop(tn, "/velocities/airspeed-kt")))
 
 		# find the flaps value for the flaps id
 		o_flaps = None
@@ -109,13 +103,12 @@ class FlightGearCopilotSkill(MycroftSkill):
 				o_flaps = i_flaps
 				break
 
-		# cheick if flaps setting is known
+		# check if flaps setting is known
 		if o_flaps == None:
 			self.speak_dialog("flaps.setting.unknown")
 			self.exit(tn)
 
-		tn.write("get " + str(profile['flaps-path']) + "\r\n")
-		flaps = tn.read_until("\n")
+		flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
 
 		# check if extend or retract flaps
 		# TODO add handling up|down|full is already set
@@ -133,8 +126,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				self.exit(tn)
 
 		# get ground speed
-		tn.write("get /velocities/groundspeed-kt\r\n")
-		gs = float(tn.read_until("\n"))
+		gs = int(float(self.get_prop(tn, "/velocities/groundspeed-kt")))
 
 		# skip speed check is speed is <= 30
 		if gs > 30:
@@ -152,7 +144,14 @@ class FlightGearCopilotSkill(MycroftSkill):
 				else:
 					self.speak("Speed checked.")
 
-		# TODO set flaps in fg
+		# TODO check flaps setting and change it again if needed
+		if flaps_mov == "extend":
+# TBC CONTINUE HERE!!!!
+			flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
+			self.nasal_exec(tn, "controls.flapsDown(1);")
+		else:
+			flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
+			self.nasal_exec(tn, "controls.flapsDown(-1);")
 
 		self.speak("Flaps " + str(flaps_request))
 		tn.close
@@ -167,8 +166,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('GearUpIntent').require('gearup'))
 	def handle_gear_up_intent(self, message):
 
-		# TODO add connection to fg
-		# TODO read acid from fg
+		tn = self.connect()
+
+		# get acid
+		tn.write("get /sim/aircraft\r\n")
+		acid = tn.read_until("\n")
+
+		profile = None
 
 		# read acid to know which profile to use
 		for i_profiles in self.settings['profiles']:
@@ -179,22 +183,32 @@ class FlightGearCopilotSkill(MycroftSkill):
 			if profile != None:
 				break
 
+		# BYPASS THE PROFILE CHECK
+		# TODO REMOVE THIS BYPASS
+		profile = self.settings['profiles'][0]
+
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
 			self.exit(tn)
 
-		if profile['gear-retractable'] == true:
-			# TODO set gear up in fg
+		if profile['gear-retractable'] == "true":
 			self.speak("Gear up")
+			# TODO puts the gear down right now... fix
+			self.nasal_exec(tn, "controls.gearDown(-1)")
 		else:
 			self.speak_dialog("gear.not.retractable")
 
 	@intent_handler(IntentBuilder('GearDownIntent').require('geardown'))
 	def handle_gear_down_intent(self, message):
 
-		# TODO add connection to fg
-		# TODO read acid from fg
+		tn = self.connect()
+
+		# get acid
+		tn.write("get /sim/aircraft\r\n")
+		acid = tn.read_until("\n")
+
+		profile = None
 
 		# read acid to know which profile to use
 		for i_profiles in self.settings['profiles']:
@@ -205,14 +219,18 @@ class FlightGearCopilotSkill(MycroftSkill):
 			if profile != None:
 				break
 
+		# BYPASS THE PROFILE CHECK
+		# TODO REMOVE THIS BYPASS
+		profile = self.settings['profiles'][0]
+
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
 			self.exit(tn)
 
-		if profile['gear-retractable'] == true:
-			# TODO set gear down in fg
+		if profile['gear-retractable'] == "true":
 			self.speak("Gear down")
+			self.nasal_exec(tn, "controls.gearDown(1)")
 		else:
 			self.speak_dialog("gear.not.retractable")
 
@@ -223,8 +241,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 #								#
 #################################################################
 
-# TODO add all possible checklist
 # TODO make it possible, to play a .mp3 file instead of tts
+# TODO read checklists from fg
 
 #################################
 #				#
@@ -253,7 +271,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("Checklist not completed")
 			sys.exit(0)
 
-		response = self.get_response("check.before.start.signs")
+		response = self.get_response("check.general.signs")
 		if response == None:
 			self.speak("Checklist not completed")
 			sys.exit(0)
@@ -262,7 +280,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("Checklist not completed")
 			sys.exit(0)
 
-		response = self.get_response("check.before.start.adirs")
+		response = self.get_response("check.general.adirs")
 		if response == None:
 			self.speak("Checklist not completed")
 			sys.exit(0)
@@ -392,10 +410,24 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('TaxiCheckIntent').require('taxi.check'))
 	def handle_taxi_check_intent(self, message):
 		# TODO make checklist plane specific
-		self.speak("Flight controls checked")
-		sleep(4)
-		self.speak("Flight instruments checked")
-		sleep(4)
+		response = self.get_response("check.taxi.flight.controls")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'checked|check', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.taxi.flight.instruments")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'checked|check', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
 		response = self.get_response("check.general.briefing")
 		if response == None:
 			self.speak("Checklist not completed")
@@ -454,7 +486,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		if response == None:
 			self.speak("Checklist not completed")
 			sys.exit(0)
-		match = re.search(r'confirmed', response, re.I)
+		match = re.search(r'confirmed|advised', response, re.I)
 		if match == None:
 			self.speak("Checklist not completed")
 			sys.exit(0)
@@ -562,7 +594,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("Checklist not completed")
 			sys.exit(0)
 
-		response = self.get_response("check.appr.seat.belts")
+		response = self.get_response("check.general.seat.belts")
 		if response == None:
 			self.speak("Checklist not completed")
 			sys.exit(0)
@@ -620,8 +652,212 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		self.speak("Landing checklist completed")
 
+#################################
+#				#
+#	After LDG Check		#
+#				#
+#################################
 
-	# TODO add flt/ctl check
+	@intent_handler(IntentBuilder('AfterLDGCheckIntent').require('after.ldg.check'))
+	def handle_after_ldg_check_intent(self, message):
+		# TODO make checklist plane specific
+		response = self.get_response("check.general.flaps")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'up|retracted', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.after.ldg.spoilers")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'disarmed', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.after.ldg.apu")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off|on|start', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.after.ldg.radar")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.after.ldg.wx")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		self.speak("After landing checklist completed")
+
+#################################
+#				#
+#	Parking Check		#
+#				#
+#################################
+
+	@intent_handler(IntentBuilder('ParkingCheckIntent').require('parking.check'))
+	def handle_parking_check_intent(self, message):
+		# TODO make checklist plane specific
+		response = self.get_response("check.general.apu.bleed")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'on', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.parking.eng")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.general.seat.belts")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.parking.lights")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.parking.fuel.pumps")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.general.parking.break")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'on|off|set', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		self.speak("Parking checklist completed")
+
+#################################
+#				#
+#	Securing Check		#
+#				#
+#################################
+
+	@intent_handler(IntentBuilder('SecuringCheckIntent').require('securing.check'))
+	def handle_securing_check_intent(self, message):
+		# TODO make checklist plane specific
+		response = self.get_response("check.general.adirs")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.securing.oxygen")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.general.apu.bleed")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.securing.emer.exit.lt")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.general.signs")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+		response = self.get_response("check.securing.apu.bat")
+		if response == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+		match = re.search(r'off', response, re.I)
+		if match == None:
+			self.speak("Checklist not completed")
+			sys.exit(0)
+
+	@intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
+	def handle_securing_check_intent(self, message):
+		self.speak("Full up")
+		sleep(2)
+		self.speak("Full down")
+		sleep(2)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Full left")
+		sleep(2)
+		self.speak("Full right")
+		sleep(2)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Full left")
+		sleep(4)
+		self.speak("Full right")
+		sleep(4)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Flight controls checked")
+
 
 #################################################################
 #								#
@@ -641,6 +877,19 @@ class FlightGearCopilotSkill(MycroftSkill):
 		tn.write("data\r\n")
 
 		return tn
+
+	# running an nasal command
+	def nasal_exec(self, tn, call):
+		tn.write("nasal\r\n")
+		tn.write(call + "\r\n")
+		tn.write("##EOF##\r\n")
+
+	# get a prop from the property tree
+	def get_prop(self, tn, prop):
+		tn.write("get " + prop + "\r\n")
+		ret = tn.read_until("\r")
+		tn.read_until("\n")
+		return ret[:-1]
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
