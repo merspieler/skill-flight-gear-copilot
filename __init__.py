@@ -96,7 +96,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		# get kias
 		kias = int(float(self.get_prop(tn, "/velocities/airspeed-kt")))
 
-		# find the flaps value for the flaps id
+		# find the flaps settings for the flaps id
 		o_flaps = None
 		for i_flaps in profile['flaps']:
 			if str(i_flaps['id']) == str(flaps_request):
@@ -111,12 +111,24 @@ class FlightGearCopilotSkill(MycroftSkill):
 		flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
 
 		# check if extend or retract flaps
-		# TODO add handling up|down|full is already set
 		if str(flaps_request) == "down" or str(flaps_request) == "full":
-			flaps_mov = "extend"
+			if flaps == o_flaps['value']:
+				self.speak_dialog("keep.flaps")
+				self.exit(tn)
+			else:
+				flaps_mov = "extend"
+				flaps_name = flaps_request
+				flaps_request = o_flaps['value']
 		elif str(flaps_request) == "up":
-			flaps_mov = "retract"
+			if flaps == o_flaps['value']:
+				self.speak_dialog("keep.flaps")
+				self.exit(tn)
+			else:
+				flaps_mov = "retract"
+				flaps_name = flaps_request
+				flaps_request = o_flaps['value']
 		else:
+			flaps_name = str(flaps_request)
 			if int(flaps_request) > flaps:
 				flaps_mov = "extend"
 			elif int(flaps_request) < flaps:
@@ -144,16 +156,22 @@ class FlightGearCopilotSkill(MycroftSkill):
 				else:
 					self.speak("Speed checked.")
 
-		# TODO check flaps setting and change it again if needed
 		if flaps_mov == "extend":
-# TBC CONTINUE HERE!!!!
-			flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
-			self.nasal_exec(tn, "controls.flapsDown(1);")
+			pos_reached = 0
+			while pos_reached == 0:
+				self.nasal_exec(tn, "controls.flapsDown(1);")
+				flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
+				if flaps == flaps_request:
+					pos_reached = 1
 		else:
-			flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
-			self.nasal_exec(tn, "controls.flapsDown(-1);")
+			pos_reached = 0
+			while pos_reached == 0:
+				self.nasal_exec(tn, "controls.flapsDown(-1);")
+				flaps = int(self.get_prop(tn, str(profile['flaps-path'])))
+				if flaps == flaps_request:
+					pos_reached = 1
 
-		self.speak("Flaps " + str(flaps_request))
+		self.speak("Flaps " + flaps_name)
 		tn.close
 
 
