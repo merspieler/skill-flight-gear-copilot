@@ -156,6 +156,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 				else:
 					self.speak("Speed checked.")
 
+		flaps_request = int(flaps_request)
+
 		if flaps_mov == "extend":
 			pos_reached = 0
 			while pos_reached == 0:
@@ -895,6 +897,20 @@ class FlightGearCopilotSkill(MycroftSkill):
 		ret = tn.read_until("\r")
 		tn.read_until("\n")
 		return ret[:-1]
+
+	# count number of items in a prop tree dir
+	def get_item_count(self, tn, directory):
+		tn.write("ls " + directory + "\r\n")
+		ret = 0
+		result = " "
+
+		while result != "":
+			result = tn.read_until("\n", 1)
+			ret = ret + 1
+
+		ret = ret - 1
+		tn.write("cd /\r\n")
+		return ret
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
