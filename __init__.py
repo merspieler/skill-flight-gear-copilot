@@ -169,12 +169,10 @@ class FlightGearCopilotSkill(MycroftSkill):
 		tn = self.connect()
 
 		# get acid
-		tn.write("get /sim/aircraft\r\n")
-		acid = tn.read_until("\n")
-
-		profile = None
+		acid = self.get_prop(tn, "/sim/aircraft")
 
 		# read acid to know which profile to use
+		profile = None
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
 				if i_acid == acid:
@@ -183,10 +181,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 			if profile != None:
 				break
 
-		# BYPASS THE PROFILE CHECK
-		# TODO REMOVE THIS BYPASS
-		profile = self.settings['profiles'][0]
-
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
 			self.speak("Profile not found")
@@ -194,7 +188,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		if profile['gear-retractable'] == "true":
 			self.speak("Gear up")
-			# TODO puts the gear down right now... fix
 			self.nasal_exec(tn, "controls.gearDown(-1)")
 		else:
 			self.speak_dialog("gear.not.retractable")
@@ -205,12 +198,10 @@ class FlightGearCopilotSkill(MycroftSkill):
 		tn = self.connect()
 
 		# get acid
-		tn.write("get /sim/aircraft\r\n")
-		acid = tn.read_until("\n")
-
-		profile = None
+		acid = self.get_prop(tn, "/sim/aircraft")
 
 		# read acid to know which profile to use
+		profile = None
 		for i_profiles in self.settings['profiles']:
 			for i_acid in i_profiles['acid']:
 				if i_acid == acid:
@@ -218,10 +209,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 					break
 			if profile != None:
 				break
-
-		# BYPASS THE PROFILE CHECK
-		# TODO REMOVE THIS BYPASS
-		profile = self.settings['profiles'][0]
 
 		if profile == None:
 			# TODO when creation of profiles via voice is possible, add dialog how to
