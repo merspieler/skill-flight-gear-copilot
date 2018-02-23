@@ -241,7 +241,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 		else:
 			self.speak_dialog("gear.not.retractable")
 
-
 #################################################################
 #								#
 #			Checklists				#
@@ -249,621 +248,62 @@ class FlightGearCopilotSkill(MycroftSkill):
 #################################################################
 
 # TODO make it possible, to play a .mp3 file instead of tts
-# TODO read checklists from fg
 
-#################################
-#				#
-#	Before Start Check	#
-#				#
-#################################
+	@intent_handler(IntentBuilder('CheckListIntent').require('check.list'))
+	def handle_check_list_intent(self, message):
 
-	@intent_handler(IntentBuilder('BeforeStartCheckIntent').require('before.start.check'))
-	def handle_before_start_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.before.start.cockpit.preparation")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'completed', response, re.I)
+		tn = self.connect()
+
+		cl_request = message.data['utterance']
+
+		checklist_count = self.get_item_count(tn, "/sim/checklists")
+
+		if checklist_count == 0:
+			self.speak("No checklists has been found")
+			self.exit(tn)
+
+		for i in range(0, checklist_count - 1):
+			checklist = i
+			checklist_title = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/title")
+			# TODO replace '/' with '|'
+			match = re.search(re.escape(checklist_title), cl_request, re.I)
+
+			if match != None:
+				self.speak("Checklist found")
+				break
+
 		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.gear.pin")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'removed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.signs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.adirs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'nav', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.fuel.quantity")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'check|checked', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.to.data")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.baro.ref")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.window")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'close|closed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.beacon")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.before.start.thr.lever")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'idle', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.parking.break")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off|set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("Before start checklist completed")
-
-#################################
-#				#
-#	After Start Check	#
-#				#
-#################################
-
-	@intent_handler(IntentBuilder('AfterStartCheckIntent').require('after.start.check'))
-	def handle_after_start_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.after.start.anti.ice")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.ecam.status")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'checked|check', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.start.pitch.trim")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.start.rudder.trim")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'0|zero', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("After start checklist completed")
-
-#########################
-#			#
-#	Taxi Check	#
-#			#
-#########################
-
-	@intent_handler(IntentBuilder('TaxiCheckIntent').require('taxi.check'))
-	def handle_taxi_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.taxi.flight.controls")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'checked|check', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.flight.instruments")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'checked|check', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.briefing")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'confirmed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.flaps.settings")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.v.spd")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.atc")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.to.no.blue")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'no blue|all green', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.to.rwy")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'confirmed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.cabin.crew")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'confirmed|advised', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.taxi.tcas")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'TA|RA|on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.eng.mode.sel")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off|norm|normal|start', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.packs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off|packs?', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("Before start checklist completed")
-
-#########################
-#			#
-#	Climb Check	#
-#			#
-#########################
-
-	@intent_handler(IntentBuilder('ClimbCheckIntent').require('climb.check'))
-	def handle_climb_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.climb.gear.up")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'up|retracted', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.flaps")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'up|retracted|0', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.packs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.baro.ref")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("After take off checklist completed")
-
-#################################
-#				#
-#	Approach Check		#
-#				#
-#################################
-
-	@intent_handler(IntentBuilder('ApprCheckIntent').require('appr.check'))
-	def handle_appr_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.general.briefing")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'confirmed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.ecam.status")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'checked|check', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.seat.belts")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.baro.ref")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.appr.min")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.eng.mode.sel")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off|norm|normal|start', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("Approach checklist completed")
-
-#########################
-#			#
-#	LDG Check	#
-#			#
-#########################
-
-	@intent_handler(IntentBuilder('LDGCheckIntent').require('ldg.check'))
-	def handle_ldg_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.ldg.no.blue")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'no blue|all green', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("Landing checklist completed")
-
-#################################
-#				#
-#	After LDG Check		#
-#				#
-#################################
-
-	@intent_handler(IntentBuilder('AfterLDGCheckIntent').require('after.ldg.check'))
-	def handle_after_ldg_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.general.flaps")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'up|retracted', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.ldg.spoilers")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'disarmed', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.ldg.apu")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off|on|start', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.ldg.radar")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.after.ldg.wx")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("After landing checklist completed")
-
-#################################
-#				#
-#	Parking Check		#
-#				#
-#################################
-
-	@intent_handler(IntentBuilder('ParkingCheckIntent').require('parking.check'))
-	def handle_parking_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.general.apu.bleed")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.parking.eng")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.seat.belts")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.parking.lights")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.parking.fuel.pumps")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.parking.break")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'on|off|set', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		self.speak("Parking checklist completed")
-
-#################################
-#				#
-#	Securing Check		#
-#				#
-#################################
-
-	@intent_handler(IntentBuilder('SecuringCheckIntent').require('securing.check'))
-	def handle_securing_check_intent(self, message):
-		# TODO make checklist plane specific
-		response = self.get_response("check.general.adirs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.securing.oxygen")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.apu.bleed")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.securing.emer.exit.lt")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.general.signs")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-		response = self.get_response("check.securing.apu.bat")
-		if response == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-		match = re.search(r'off', response, re.I)
-		if match == None:
-			self.speak("Checklist not completed")
-			sys.exit(0)
-
-	@intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
-	def handle_securing_check_intent(self, message):
-		self.speak("Full up")
-		sleep(2)
-		self.speak("Full down")
-		sleep(2)
-		self.speak("Neutral")
-		sleep(2)
-		self.speak("Full left")
-		sleep(2)
-		self.speak("Full right")
-		sleep(2)
-		self.speak("Neutral")
-		sleep(2)
-		self.speak("Full left")
-		sleep(4)
-		self.speak("Full right")
-		sleep(4)
-		self.speak("Neutral")
-		sleep(2)
-		self.speak("Flight controls checked")
+			self.speak("Required checklist wasn't found")
+			self.exit(tn)
+
+		# TODO make the programm use all pages, not only the first
+		page = ""
+		if self.prop_exist(tn, "page", "/sim/checklists/checklist[" + str(checklist) + "]") == 1:
+			page = "page/"
+
+		item_count = self.get_item_count(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page)
+
+		if item_count == 0:
+			self.speak("The required checklist has no entrys")
+			self.exit(tn)
+
+		for i in range(0, item_count - 1):
+			item = i
+			item_name = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/name")
+			item_value = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/value")
+			# TODO expand adverbations to full words, remove '/'
+			self.speak(item_name)
+
+			response = self.get_response("dummy")
+			if response == None:
+				self.speak("Checklist not completed")
+				sys.exit(0)
+			# TODO modify item_value to make it speakable (eg removing '(')
+			# TODO replace '/' with '|'
+			match = re.search(item_value, response, re.I)
+			if match == None:
+				self.speak("Checklist not completed")
+				sys.exit(0)
 
 
 #################################################################
@@ -909,8 +349,22 @@ class FlightGearCopilotSkill(MycroftSkill):
 			ret = ret + 1
 
 		ret = ret - 1
-		tn.write("cd /\r\n")
 		return ret
+
+	# checks if a property exists at a given path
+	def prop_exist(self, tn, prop, path):
+		tn.write("ls " + path + "\r\n")
+		found = 0
+		result = " "
+
+		while result != "":
+			result = tn.read_until("\n", 1)
+			match = re.search(prop, result, re.I)
+			if match != None:
+				found = 1
+				break
+
+		return found
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
