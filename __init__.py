@@ -8,6 +8,7 @@ from adapt.intent import IntentBuilder
 from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
+from mycroft.util import normalize
 
 LOGGER = getLogger(__name__)
 
@@ -60,7 +61,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 	@intent_handler(IntentBuilder('FlapsIntent').require('flaps'))
 	def handle_flaps_intent(self, message):
-		flaps_request = message.data['utterance']
+		flaps_request = normalize(message.data['utterance'])
 		if flaps_request == "flaps":
 			self.speak_dialog("no.setting")
 			sys.exit(0)
