@@ -265,7 +265,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		for i in range(0, checklist_count - 1):
 			checklist = i
 			checklist_title = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/title")
-			# TODO replace '/' with '|'
+			checklist_title = checklist_title.replace('/', '|')
 			match = re.search(re.escape(checklist_title), cl_request, re.I)
 
 			if match != None:
@@ -291,7 +291,37 @@ class FlightGearCopilotSkill(MycroftSkill):
 			item = i
 			item_name = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/name")
 			item_value = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/value")
-			# TODO expand adverbations to full words, remove '/'
+
+			# expand adverbations to full words
+			# TODO reduce collisions when used with other a/c
+			item_name = re.sub("\sALT\s?", "altitude", item_name, flags=re.I)
+			item_name = re.sub("L/G", "landing gear", item_name, flags=re.I)
+			item_name = re.sub("SPLRS", "spoilers", item_name, flags=re.I)
+			item_name = re.sub("PREP", "preperation", item_name, flags=re.I)
+			item_name = re.sub("TO ", "take off ", item_name)
+			item_name = re.sub(" TO", " take off", item_name) # have it twice to prevent collisions with words containing 'to'
+			item_name = re.sub("REF", "reference", item_name, flags=re.I)
+			item_name = re.sub("A/SKID", "anti skid", item_name, flags=re.I)
+			item_name = re.sub("N/W", "nose weel", item_name, flags=re.I)
+			item_name = re.sub("A/THR", "auto thrust", item_name, flags=re.I)
+			item_name = re.sub("THR", "thrust", item_name, flags=re.I)
+			item_name = re.sub("Eng", "engine", item_name, flags=re.I)
+			item_name = re.sub("Mstr", "master", item_name, flags=re.I)
+			item_name = re.sub("PB", "push button", item_name, flags=re.I)
+			item_name = re.sub("man", "manual", item_name, flags=re.I)
+			item_name = re.sub("FLT", "flight", item_name, flags=re.I)
+			item_name = re.sub("INST", "instruments", item_name, flags=re.I)
+			item_name = re.sub("TEMP", "temperature", item_name, flags=re.I)
+			item_name = re.sub("LT", "light", item_name, flags=re.I)
+			item_name = re.sub("SEL", "selector", item_name, flags=re.I)
+			item_name = re.sub("LDG", "landing", item_name, flags=re.I)
+			item_name = re.sub("MDA", "minimum decent altitude", item_name, flags=re.I)
+			item_name = re.sub("DH", "decision height", item_name, flags=re.I)
+			item_name = re.sub("EXT", "external", item_name, flags=re.I)
+			item_name = re.sub("FLX", "flex", item_name, flags=re.I)
+			item_name = re.sub("EMER", "emergency", item_name, flags=re.I)
+			item_name = re.sub("BRK", "break", item_name, flags=re.I)
+			item_name = item_name.replace('/', ' ') # has to be last cause some adverbations may contain a '/'
 			self.speak(item_name)
 
 			response = self.get_response("dummy")
@@ -325,7 +355,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		return tn
 
-	# running an nasal command
+	# running a nasal command
 	def nasal_exec(self, tn, call):
 		tn.write("nasal\r\n")
 		tn.write(call + "\r\n")
