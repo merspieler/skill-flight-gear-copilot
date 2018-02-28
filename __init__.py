@@ -46,6 +46,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 # might be useful
 # make_active()
 
+# TODO make it possible, to play a .mp3 file instead of tts
+
 #################################################################
 #								#
 #			Actions					#
@@ -247,7 +249,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 #								#
 #################################################################
 
-# TODO make it possible, to play a .mp3 file instead of tts
 
 	@intent_handler(IntentBuilder('CheckListIntent').require('check.list'))
 	def handle_check_list_intent(self, message):
@@ -291,49 +292,35 @@ class FlightGearCopilotSkill(MycroftSkill):
 			item = i
 			item_name = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/name")
 			item_value = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/value")
-
-			# expand adverbations to full words
-			# TODO reduce collisions when used with other a/c
-			item_name = re.sub("\sALT\s?", "altitude", item_name, flags=re.I)
-			item_name = re.sub("L/G", "landing gear", item_name, flags=re.I)
-			item_name = re.sub("SPLRS", "spoilers", item_name, flags=re.I)
-			item_name = re.sub("PREP", "preperation", item_name, flags=re.I)
-			item_name = re.sub("TO ", "take off ", item_name)
-			item_name = re.sub(" TO", " take off", item_name) # have it twice to prevent collisions with words containing 'to'
-			item_name = re.sub("REF", "reference", item_name, flags=re.I)
-			item_name = re.sub("A/SKID", "anti skid", item_name, flags=re.I)
-			item_name = re.sub("N/W", "nose weel", item_name, flags=re.I)
-			item_name = re.sub("A/THR", "auto thrust", item_name, flags=re.I)
-			item_name = re.sub("THR", "thrust", item_name, flags=re.I)
-			item_name = re.sub("Eng", "engine", item_name, flags=re.I)
-			item_name = re.sub("Mstr", "master", item_name, flags=re.I)
-			item_name = re.sub("PB", "push button", item_name, flags=re.I)
-			item_name = re.sub("man", "manual", item_name, flags=re.I)
-			item_name = re.sub("FLT", "flight", item_name, flags=re.I)
-			item_name = re.sub("INST", "instruments", item_name, flags=re.I)
-			item_name = re.sub("TEMP", "temperature", item_name, flags=re.I)
-			item_name = re.sub("LT", "light", item_name, flags=re.I)
-			item_name = re.sub("SEL", "selector", item_name, flags=re.I)
-			item_name = re.sub("LDG", "landing", item_name, flags=re.I)
-			item_name = re.sub("MDA", "minimum decent altitude", item_name, flags=re.I)
-			item_name = re.sub("DH", "decision height", item_name, flags=re.I)
-			item_name = re.sub("EXT", "external", item_name, flags=re.I)
-			item_name = re.sub("FLX", "flex", item_name, flags=re.I)
-			item_name = re.sub("EMER", "emergency", item_name, flags=re.I)
-			item_name = re.sub("BRK", "break", item_name, flags=re.I)
-			item_name = item_name.replace('/', ' ') # has to be last cause some adverbations may contain a '/'
+			item_name = self.expand_adverbations(item_name)
+			item_name = item_name.replace('/', ' ') # maybe make the replace '/' -> ' and ' to be spoken out better
 			self.speak(item_name)
 
 			response = self.get_response("dummy")
 			if response == None:
 				self.speak("Checklist not completed")
 				sys.exit(0)
-			# TODO modify item_value to make it speakable (eg removing '(')
-			# TODO replace '/' with '|'
+
+			# check if F/O has to confirm as well
+			item_value_check = re.sub("(BOTH)", "", item_value, flags=re.I) # Add more indication of this case, that are used in other A/C
+			fo_conf = 0
+			if item_value_check != item_value:
+				fo_conf = 1
+				item_value = item_value_check
+
+			item_value = self.expand_adverbations(item_value)
+			item_value = item_value.replace('/', '|')
+			item_value = item_value.replace('_', '')
+			item_value = item_value.replace('(', ' ')
+			item_value = item_value.replace(')', ' ')
 			match = re.search(item_value, response, re.I)
+
 			if match == None:
 				self.speak("Checklist not completed")
 				sys.exit(0)
+
+			if fo_conf = 1:
+				self.speak(item_value)
 
 
 #################################################################
@@ -395,6 +382,39 @@ class FlightGearCopilotSkill(MycroftSkill):
 				break
 
 		return found
+
+	# expands adverbations to full words
+	def expand_adverbations(self, text)
+		# TODO reduce collisions when used with other a/c
+		# TODO add more adverbations
+		text = re.sub("\sALT\s?", "altitude", text, flags=re.I)
+		text = re.sub("L/G", "landing gear", text, flags=re.I)
+		text = re.sub("SPLRS", "spoilers", text, flags=re.I)
+		text = re.sub("PREP", "preperation", text, flags=re.I)
+		text = re.sub("^TO ", "take off ", text)
+		text = re.sub(" TO$", " take off", text) # have it twice to prevent collisions with words containing 'to'
+		text = re.sub("REF", "reference", text, flags=re.I)
+		text = re.sub("A/SKID", "anti skid", text, flags=re.I)
+		text = re.sub("N/W", "nose weel", text, flags=re.I)
+		text = re.sub("A/THR", "auto thrust", text, flags=re.I)
+		text = re.sub("THR", "thrust", text, flags=re.I)
+		text = re.sub("Eng", "engine", text, flags=re.I)
+		text = re.sub("Mstr", "master", text, flags=re.I)
+		text = re.sub("PB", "push button", text, flags=re.I)
+		text = re.sub("man", "manual", text, flags=re.I)
+		text = re.sub("FLT", "flight", text, flags=re.I)
+		text = re.sub("INST", "instruments", text, flags=re.I)
+		text = re.sub("TEMP", "temperature", text, flags=re.I)
+		text = re.sub("LT", "light", text, flags=re.I)
+		text = re.sub("SEL", "selector", text, flags=re.I)
+		text = re.sub("LDG", "landing", text, flags=re.I)
+		text = re.sub("MDA", "minimum decent altitude", text, flags=re.I)
+		text = re.sub("DH", "decision height", text, flags=re.I)
+		text = re.sub("EXT", "external", text, flags=re.I)
+		text = re.sub("FLX", "flex", text, flags=re.I)
+		text = re.sub("EMER", "emergency", text, flags=re.I)
+		text = re.sub("BRK", "break", text, flags=re.I)
+		return text
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
