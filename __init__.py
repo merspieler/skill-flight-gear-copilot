@@ -318,7 +318,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				self.speak("Checklist not completed")
 				sys.exit(0)
 
-			if fo_conf = 1:
+			if fo_conf == 1:
 				self.speak(item_value)
 
         @intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
@@ -404,7 +404,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		return found
 
 	# expands adverbations to full words
-	def expand_adverbations(self, text)
+	def expand_adverbations(self, text):
 		# TODO reduce collisions when used with other a/c
 		# TODO add more adverbations
 		text = re.sub("\sALT\s?", "altitude", text, flags=re.I)
