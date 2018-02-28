@@ -872,10 +872,10 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('FlightGearPortIntent').require('conf.flightgear.port'))
 	def handle_flight_gear_port_intent(self, message):
 		port = normalize(message.data['utterance'])
-		port = re.sub('\D', '', port, flags=re.G)
+		port = re.sub('\D', '', port)
 
-		if port < 0 or port > 65535:
-			self.speak("Port out of range")
+		if port > 0 or port < 65535:
+			self.speak("Port '" + port + "' out of range")
 			sys.exit(0)
 
 		self.settings['port'] = port
