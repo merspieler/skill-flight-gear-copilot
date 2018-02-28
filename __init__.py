@@ -249,7 +249,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 #								#
 #################################################################
 
-
 	@intent_handler(IntentBuilder('CheckListIntent').require('check.list'))
 	def handle_check_list_intent(self, message):
 
@@ -322,6 +321,27 @@ class FlightGearCopilotSkill(MycroftSkill):
 			if fo_conf = 1:
 				self.speak(item_value)
 
+        @intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
+        def handle_securing_check_intent(self, message):
+                self.speak("Full up")
+                sleep(2)
+                self.speak("Full down")
+                sleep(2)
+                self.speak("Neutral")
+                sleep(2)
+                self.speak("Full left")
+                sleep(2)
+                self.speak("Full right")
+                sleep(2)
+                self.speak("Neutral")
+                sleep(2)
+                self.speak("Full left")
+                sleep(4)
+                self.speak("Full right")
+                sleep(4)
+                self.speak("Neutral")
+                sleep(2)
+                self.speak("Flight controls checked")
 
 #################################################################
 #								#
