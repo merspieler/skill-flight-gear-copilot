@@ -44,9 +44,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 #	...
 # ]
 
-# might be useful
-# make_active()
-
 #################################################################
 #								#
 #			Actions					#
@@ -866,6 +863,44 @@ class FlightGearCopilotSkill(MycroftSkill):
 		sleep(2)
 		self.speak("Flight controls checked")
 
+#################################################################
+#								#
+#			Configuration				#
+#								#
+#################################################################
+
+	@intent_handler(IntentBuilder('FlightGearPortIntent').require('conf.flightgear.port'))
+	def handle_flight_gear_port_intent(self, message):
+		port = normalize(message.data['utterance'])
+		port = re.sub('\D', '', port, flags=re.G)
+
+		if port < 0 or port > 65535:
+			self.speak("Port out of range")
+			sys.exit(0)
+
+		self.settings['port'] = port
+
+		self.speak("I will use now port " + str(port) + " to connect to flightgear")
+
+	@intent_handler(IntentBuilder('AddToProfileIntent').require('conf.add.to.profile'))
+	def handle_add_to_profile_intent(self, message):
+		tn = self.connect()
+		pass
+		# TODO add re to get the profile name
+		# TODO check if profile exists
+		# TODO add acid to profile
+
+	@intent_handler(IntentBuilder('CreateProfileIntent').require('conf.create.profile'))
+	def handle_create_profile_intent(self, message):
+		tn = self.connect()
+
+		# TODO get profile name
+		# TODO get acid
+		# TODO find flaps path
+		# TODO scan flaps
+		# TODO ask the user how to name the flaps positions
+		# TODO ask if user wants to add speeds for the flaps settings
+		# TODO ask user if the gear is retractable
 
 #################################################################
 #								#
