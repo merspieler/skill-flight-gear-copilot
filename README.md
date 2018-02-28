@@ -10,8 +10,8 @@ Currently in work:
 * Setting changes per voice command
 
 ## Requirements
-FlightGear version 2018.1 or above.
-FlightGear is started with the `--allow-nasal-from-sockets` command line option.
+FlightGear version 2018.1 or above.  
+FlightGear is started with the `--allow-nasal-from-sockets` command line option.  
 FlightGear needs to be started with telnet (port 8081 is used as default in the settings) `--telnet=8081`.
 
 ## Examples 
