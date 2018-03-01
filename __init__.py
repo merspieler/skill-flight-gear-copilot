@@ -875,7 +875,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		port = normalize(message.data['utterance'])
 		port = re.sub('\D', '', port)
 
-		if int(port) > 0 or int(port) < 65535:
+		if int(port) >= 0 or int(port) <= 65536:
 			self.speak("Port '" + port + "' out of range")
 			sys.exit(0)
 
@@ -906,7 +906,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
 	def handle_find_flight_gear_intent(self, message):
-		self.settings['port'] = 80
 		self.speak("Ok, I'm looking for a running flightgear on port " + str(self.settings['port']) + ". This can take a while.")
 
 		# check localhost first
@@ -930,35 +929,39 @@ class FlightGearCopilotSkill(MycroftSkill):
 		except socket.error:
 			pass
 
-		# TODO get network
-		# TODO scan network
-		try:
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			result = sock.connect_ex((ip, self.settings['port']))
-			if result == 0:
-				# if a connection is found, ask user if it's the correct one
-				try:
-					(host, dummy, dummy) = socket.gethostbyaddr(ip)
-					host = socket.getfqdn(host)
-				except socket.gaierror:
-					pass
-				self.speak("Found an instance on " + host + ", do you want to use this computer?")
-				response = self.get_response("dummy")
-				if response != None:
-					match = re.search("yes|afirm|ok", response, re.I)
-					if match != None:
-						self.settings['host'] = host
-						self.speak("New host is set")
-						sys.exit()
+		# get network
+		net = self.get_ip()
+		net = re.sub("\d[1-3]$", '', net)
 
-				self.speak("Ok, I continue to search")
-			sock.close()
+		# scan network
+		for host_part in range(1, 255):
+			ip = net + str(host_part)
+			try:
+				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				result = sock.connect_ex((ip, self.settings['port']))
+				if result == 0:
+					# if a connection is found, ask user if it's the correct one
+					try:
+						(host, dummy, dummy) = socket.gethostbyaddr(ip)
+						host = socket.getfqdn(host)
+					except socket.gaierror:
+						pass
+					self.speak("Found an instance on " + host + ", do you want to use this computer?")
+					response = self.get_response("dummy")
+					if response != None:
+						match = re.search("yes|afirm|ok", response, re.I)
+						if match != None:
+							self.settings['host'] = host
+							self.speak("New host is set")
+							sys.exit()
 
-		except socket.error:
-			pass
+					self.speak("Ok, I continue to search")
+				sock.close()
+
+			except socket.error:
+				pass
 
 		self.speak("I haven't found any running flightgear on port " + str(self.settings['port']))
-		self.settings['port'] = 8081
 
 #################################################################
 #								#
@@ -1005,6 +1008,19 @@ class FlightGearCopilotSkill(MycroftSkill):
 		ret = ret - 1
 		tn.write("cd /\r\n")
 		return ret
+
+	# get ip address
+	def get_ip(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		try:
+			# doesn't even have to be reachable
+			s.connect(('10.255.255.255', 1))
+			IP = s.getsockname()[0]
+		except:
+			IP = '127.0.0.1'
+		finally:
+			s.close()
+		return IP
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
