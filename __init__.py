@@ -875,8 +875,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 		port = normalize(message.data['utterance'])
 		port = re.sub('\D', '', port)
 
-		if int(port) >= 0 or int(port) <= 65536:
-			self.speak("Port '" + port + "' out of range")
+		if int(port) < 0 or int(port) > 65535:
+			self.speak("Port '" + str(port) + "' out of range")
 			sys.exit(0)
 
 		self.settings['port'] = int(port)
@@ -886,7 +886,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('AddToProfileIntent').require('conf.add.to.profile'))
 	def handle_add_to_profile_intent(self, message):
 		tn = self.connect()
-		pass
 		# TODO add re to get the profile name
 		# TODO check if profile exists
 		# TODO add acid to profile
