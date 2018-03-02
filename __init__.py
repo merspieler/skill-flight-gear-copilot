@@ -887,9 +887,37 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('AddToProfileIntent').require('conf.add.to.profile'))
 	def handle_add_to_profile_intent(self, message):
 		tn = self.connect()
-		# TODO add re to get the profile name
-		# TODO check if profile exists
-		# TODO add acid to profile
+		# re to get the profile name
+		match = re.search("profile \.*$", message.data['utterance'], re.I)
+		if match == None:
+			self.speak("I didn't understand a profile name")
+			self.exit(tn)
+
+		# remove 'profile '
+		profile = re.sub("profile ", '', match)
+
+		profile_id = 0
+
+		# check if profile exists
+		for i_profile in self.settings['profiles']:
+			match = re.search(i_profile['name'], profile, re.I)
+			if match != None:
+				break
+
+			profile_id = profile_id + 1
+
+		# check if acid exists in the profile
+		for i_acid in i_profile['acid']:
+			if i_acid == acid:
+				self.speak("The Aircraft ID does already exsists in this profile")
+				self.exit(tn)
+
+		# get acid
+                acid = self.get_prop(tn, "/sim/aircraft")
+
+		# add acid to profile
+		self.settings['profiles'][profile_id]['acid'].append(acid)
+		self.speak("Added the aircraft to the profile")
 
 	@intent_handler(IntentBuilder('CreateProfileIntent').require('conf.create.profile'))
 	def handle_create_profile_intent(self, message):
