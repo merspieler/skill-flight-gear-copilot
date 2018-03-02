@@ -887,6 +887,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('AddToProfileIntent').require('conf.add.to.profile'))
 	def handle_add_to_profile_intent(self, message):
 		tn = self.connect()
+
 		# re to get the profile name
 		match = re.search("profile \.*$", message.data['utterance'], re.I)
 		if match == None:
@@ -923,14 +924,33 @@ class FlightGearCopilotSkill(MycroftSkill):
 	def handle_create_profile_intent(self, message):
 		tn = self.connect()
 
-		# TODO get profile name
+		# re to get the profile name
+		match = re.search("profile \.*$", message.data['utterance'], re.I)
+		if match == None:
+			self.speak("I didn't understand a profile name")
+			self.exit(tn)
+
+		# remove 'profile '
+		profile = re.sub("profile ", '', match)
+
 		# get acid
 		acid = self.get_prop(tn, "/sim/aircraft")
+
+		# ask user if the gear is retractable
+		self.speak("Has this aircraft a retractable gear?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		gear_retractable = "false"
+		if response != None:
+			match = re.search("yes|afirm|ok", response, re.I)
+			if match != None:
+				gear_retractable = "true"
+
 		# TODO find flaps path
 		# TODO scan flaps
-		# TODO ask the user how to name the flaps positions
+			# TODO ask the user how to name the flaps positions
+
 		# TODO ask if user wants to add speeds for the flaps settings
-		# TODO ask user if the gear is retractable
 
 	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
 	def handle_find_flight_gear_intent(self, message):
