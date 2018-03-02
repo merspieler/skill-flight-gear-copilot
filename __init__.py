@@ -6,6 +6,7 @@ from time import sleep
 from telnetlib import Telnet
 
 from adapt.intent import IntentBuilder
+from mycroft.audio import wait_while_speaking
 from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -914,12 +915,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 			result = sock.connect_ex((ip, self.settings['port']))
 			if result == 0:
 				self.speak("Found an instance on my self, do you want to use this computer?")
+				wait_while_speaking()
 				response = self.get_response("dummy")
 				if response != None:
 					match = re.search("yes|afirm|ok", response, re.I)
 					if match != None:
 						self.settings['host'] = "localhost"
-						self.speak("New host is set")
+						self.speak("New host " + self.settings['host'] + " is set")
 						sys.exit()
 
 				self.speak("Ok, I continue to search")
@@ -946,12 +948,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 					except socket.gaierror:
 						pass
 					self.speak("Found an instance on " + host + ", do you want to use this computer?")
+					wait_while_speaking()
 					response = self.get_response("dummy")
 					if response != None:
 						match = re.search("yes|afirm|ok", response, re.I)
 						if match != None:
 							self.settings['host'] = host
-							self.speak("New host is set")
+							self.speak("New host " + self.settings['host'] + " is set")
 							sys.exit()
 
 					self.speak("Ok, I continue to search")
