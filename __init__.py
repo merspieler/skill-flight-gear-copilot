@@ -17,34 +17,10 @@ LOGGER = getLogger(__name__)
 class FlightGearCopilotSkill(MycroftSkill):
 	def __init__(self):
 		super(FlightGearCopilotSkill, self).__init__()
+		# Already existing options are here read only -> will not be overwritten
 		self.settings['host'] = "localhost"
 		self.settings['port'] = 8081
-		# TODO add self.settings['profiles'] with default profiles (A32X and c172p)
-
-# DEFINITION of the settings['profiles'] structure
-# [
-#	{
-#		"name": "<profile-name>",
-#		"acid":
-#		[
-#			"<Aircraft-id> can be found in /???",
-#			...
-#		],
-#		flaps:
-#		[
-#			{
-#				"id": "<flaps-name> can be up|down|full|number",
-#				"min-spd": "<minimum speed for save retraction>",
-#				"max-spd": "<maximum speed for save extention>",
-#				"value": "<value in the prop tree>"
-#			},
-#			...
-#		]
-#		"flaps-path": "<path to current flaps-position>"
-#		"gear-retractable": "<true|false>"
-#	},
-#	...
-# ]
+		self.write_default_profiles()
 
 #################################################################
 #								#
@@ -966,7 +942,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				wait_while_speaking()
 				response = self.get_response("dummy")
 				if response != None:
-					match = re.search("yes|afirm|ok", response, re.I)
+					match = re.search("yes|affirm|ok", response, re.I)
 					if match != None:
 						self.settings['host'] = "localhost"
 						self.speak("New host " + self.settings['host'] + " is set")
@@ -999,7 +975,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 					wait_while_speaking()
 					response = self.get_response("dummy")
 					if response != None:
-						match = re.search("yes|afirm|ok", response, re.I)
+						match = re.search("yes|affirm|ok", response, re.I)
 						if match != None:
 							self.settings['host'] = host
 							self.speak("New host " + self.settings['host'] + " is set")
@@ -1012,6 +988,18 @@ class FlightGearCopilotSkill(MycroftSkill):
 				pass
 
 		self.speak("I haven't found any running flightgear on port " + str(self.settings['port']))
+
+	# load the default profile config
+	@intent_handler(IntentBuilder('Load DefaultProfilesIntent').require('load.default.profile'))
+	def handle_load_default_profile_intent(self, message):
+		self.speak("This will remove all profiles what you have added. Do you want to continue?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		if response != None:
+			match = re.search("yes|affirm|ok", response, re.I)
+			if match != None:
+				self.write_default_profiles()
+				self.speak("Profiles reseted")
 
 #################################################################
 #								#
@@ -1071,6 +1059,144 @@ class FlightGearCopilotSkill(MycroftSkill):
 		finally:
 			s.close()
 		return IP
+
+	# write the defaults to the settings.json file
+	def write_default_profiles(self):
+
+# DEFINITION of the settings['profiles'] structure
+# [
+#	{
+#		"name": "<profile-name>",
+#		"acid":
+#		[
+#			"<Aircraft-id> can be found in /???",
+#			...
+#		],
+#		flaps:
+#		[
+#			{
+#				"id": "<flaps-name> can be up|down|full|number",
+#				"min-spd": "<minimum speed for save retraction>",
+#				"max-spd": "<maximum speed for save extention>",
+#				"value": "<value in the prop tree>"
+#			},
+#			...
+#		]
+#		"flaps-path": "<path to current flaps-position>"
+#		"gear-retractable": "<true|false>"
+#	},
+#	...
+# ]
+		profiles = []
+
+		#################
+		# Airbus A320	#
+		#################
+		profile = {}
+		profile['name'] = "Airbus A320"
+		profile['gear-retractable'] = "true"
+		profile['flaps-path'] = "/controls/flight/flap-lever"
+
+		# ACIDs
+		profile['acid'] = []
+		profile['acid'].append("A320-200-CFM")
+		profile['acid'].append("A320-200-IAE")
+		profile['acid'].append("A320-100-CFM")
+		profile['acid'].append("A320neo-CFM")
+		profile['acid'].append("A320neo-PW")
+
+		# Flaps settings
+		profile['flaps'] = []
+
+		# TODO use real min speeds
+
+		# Flaps up
+		flaps = {}
+		flaps['id'] = "up"
+		flaps['min-spd'] = 210
+		flaps['max-spd'] = 350
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 1
+		flaps = {}
+		flaps['id'] = 1
+		flaps['min-spd'] = 180
+		flaps['max-spd'] = 230
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 2
+		flaps = {}
+		flaps['id'] = 2
+		flaps['min-spd'] = 165
+		flaps['max-spd'] = 200
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 3
+		flaps = {}
+		flaps['id'] = 3
+		flaps['min-spd'] = 150
+		flaps['max-spd'] = 185
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps full
+		flaps = {}
+		flaps['id'] = "full"
+		flaps['min-spd'] = 140
+		flaps['max-spd'] = 177
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		profiles.append(profile)
+
+		#################
+		# c172p		#
+		#################
+		profile = {}
+		profile['name'] = "c172p"
+		profile['gear-retractable'] = "false"
+		profile['flaps-path'] = "" # TODO set correct value
+
+		# ACIDs
+		profile['acid'] = []
+		profile['acid'].append("c172p")
+
+		# Flaps settings
+		profile['flaps'] = []
+
+		# TODO use real speeds
+
+		# Flaps up
+		flaps = {}
+		flaps['id'] = "up"
+		flaps['min-spd'] = 54
+		flaps['max-spd'] = 300
+		flaps['value'] = 0 # TODO set correct value
+		profile['flaps'].append(flaps)
+
+		# Flaps 1
+		flaps = {}
+		flaps['id'] = 1
+		flaps['min-spd'] = 48
+		flaps['max-spd'] = 110
+		flaps['value'] = 0 # TODO set correct value
+		profile['flaps'].append(flaps)
+
+		# Flaps down
+		flaps = {}
+		flaps['id'] = "down"
+		flaps['min-spd'] = 43
+		flaps['max-spd'] = 85
+		flaps['value'] = 0 # TODO set correct value
+		profile['flaps'].append(flaps)
+
+		profiles.append(profile)
+
+		self.settings['profiles'] = profiles
+		pass
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
