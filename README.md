@@ -19,4 +19,8 @@ FlightGear needs to be started with telnet (port 8081 is used as default in the 
 * "gear down"
 * "landing checklist"
 
+## In Default Profiles Included Aircrafts
+* IDG-A32X
+* Cessna 172p (WIP)
+
 ## Credits 
