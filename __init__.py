@@ -862,13 +862,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 		tn = self.connect()
 
 		# re to get the profile name
-		match = re.search("profile \.*$", message.data['utterance'], re.I)
+		match = re.search("profile .*$", message.data['utterance'], re.I)
 		if match == None:
 			self.speak("I didn't understand a profile name")
 			self.exit(tn)
 
 		# remove 'profile '
-		profile = re.sub("profile ", '', match)
+		profile = re.sub("profile ", '', match.group(0))
 
 		profile_id = 0
 
@@ -880,14 +880,14 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 			profile_id = profile_id + 1
 
+		# get acid
+                acid = self.get_prop(tn, "/sim/aircraft")
+
 		# check if acid exists in the profile
 		for i_acid in i_profile['acid']:
 			if i_acid == acid:
 				self.speak("The Aircraft ID does already exsists in this profile")
 				self.exit(tn)
-
-		# get acid
-                acid = self.get_prop(tn, "/sim/aircraft")
 
 		# add acid to profile
 		self.settings['profiles'][profile_id]['acid'].append(acid)
@@ -899,13 +899,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 		profile = {}
 
 		# re to get the profile name
-		match = re.search("profile \.*$", message.data['utterance'], re.I)
+		match = re.search("profile .*$", message.data['utterance'], re.I)
 		if match == None:
 			self.speak("I didn't understand a profile name")
 			self.exit(tn)
 
 		# remove 'profile '
-		profile['name'] = re.sub("profile ", '', match)
+		profile['name'] = re.sub("profile ", "", match.group(0))
 		
 		# get acid
 		profile['acid'] = []
@@ -923,8 +923,15 @@ class FlightGearCopilotSkill(MycroftSkill):
 				profile['gear_retractable'] = "false"
 
 		# TODO find flaps path
+		profile['flaps-path'] = "/controls/flight/flap-lever"
 
 		profile['flaps'] = []
+		flaps = {}
+		flaps['value'] = "Never occuring value"
+
+		# make sure the flaps are fully up
+		for i in range(0, 10):
+			self.nasal_exec(tn, "controls.flapsDown(-1);")
 
 		# scan a maximum of 10 flaps positions... should be enough for every plane
 		for i in range(0,10):
@@ -939,7 +946,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				response = self.get_response("dummy")
 
 				# extracting the flaps setting from the response
-				match = re.match(r'.*(up|full|down|\d{1,2}).*', flaps_request, re.I)
+				match = re.match(r'.*(up|full|down|\d{1,2}).*', response, re.I)
 				if match != None:
 					flaps['id'] = match.group(1)
 					break
@@ -947,6 +954,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 				self.speak("Please repeat")
 
 			flaps['value'] = self.get_prop(tn, profile['flaps-path'])
+			flaps['min-spd'] = 0
+			flaps['max-spd'] = 999
 			profile['flaps'].append(flaps)
 			self.nasal_exec(tn, "controls.flapsDown(1);")
 
@@ -979,6 +988,9 @@ class FlightGearCopilotSkill(MycroftSkill):
 								flaps['min-spd'] = match.group(0)
 								break
 						self.speak("I didn't understand a valid speed, please repeat")
+
+		self.settings['profiles'].append(profile)
+		self.speak("Successfully added profile " + profile['name'])
 
 	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
 	def handle_find_flight_gear_intent(self, message):
@@ -1208,7 +1220,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		profile = {}
 		profile['name'] = "c172p"
 		profile['gear-retractable'] = "false"
-		profile['flaps-path'] = "" # TODO set correct value
+		profile['flaps-path'] = "/controls/flight/flaps"
 
 		# ACIDs
 		profile['acid'] = []
@@ -1222,23 +1234,31 @@ class FlightGearCopilotSkill(MycroftSkill):
 		flaps['id'] = "up"
 		flaps['min-spd'] = 54
 		flaps['max-spd'] = 300
-		flaps['value'] = 0 # TODO set correct value
+		flaps['value'] = 0
 		profile['flaps'].append(flaps)
 
-		# Flaps 1
+		# Flaps 10
 		flaps = {}
-		flaps['id'] = 1
+		flaps['id'] = 10
 		flaps['min-spd'] = 48
 		flaps['max-spd'] = 110
-		flaps['value'] = 0 # TODO set correct value
+		flaps['value'] = 0.3333334
 		profile['flaps'].append(flaps)
 
-		# Flaps down
+		# Flaps 20
 		flaps = {}
-		flaps['id'] = "down"
+		flaps['id'] = "20"
 		flaps['min-spd'] = 43
 		flaps['max-spd'] = 85
-		flaps['value'] = 0 # TODO set correct value
+		flaps['value'] = 0.6666668
+		profile['flaps'].append(flaps)
+
+		# Flaps full
+		flaps = {}
+		flaps['id'] = "full"
+		flaps['min-spd'] = 43
+		flaps['max-spd'] = 85
+		flaps['value'] = 1
 		profile['flaps'].append(flaps)
 
 		profiles.append(profile)
