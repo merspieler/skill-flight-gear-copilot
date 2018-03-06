@@ -3,3 +3,5 @@
 *.swo
 # .pyc
 *.pyc
+# settings.json file
+settings.json
