@@ -1,10 +1,12 @@
 import sys
+import socket
 import re
 import json
 from time import sleep
 from telnetlib import Telnet
 
 from adapt.intent import IntentBuilder
+from mycroft.audio import wait_while_speaking
 from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
@@ -15,37 +17,10 @@ LOGGER = getLogger(__name__)
 class FlightGearCopilotSkill(MycroftSkill):
 	def __init__(self):
 		super(FlightGearCopilotSkill, self).__init__()
+		# Already existing options are here read only -> will not be overwritten
 		self.settings['host'] = "localhost"
 		self.settings['port'] = 8081
-		# TODO add self.settings['profiles'] with default profiles (A32X and c172p)
-
-# DEFINITION of the settings['profiles'] structure
-# [
-#	{
-#		"name": "<profile-name>",
-#		"acid":
-#		[
-#			"<Aircraft-id> can be found in /???",
-#			...
-#		],
-#		flaps:
-#		[
-#			{
-#				"id": "<flaps-name> can be up|down|full|number",
-#				"min-spd": "<minimum speed for save retraction>",
-#				"max-spd": "<maximum speed for save extention>",
-#				"value": "<value in the prop tree>"
-#			},
-#			...
-#		]
-#		"flaps-path": "<path to current flaps-position>"
-#		"gear-retractable": "<true|false>"
-#	},
-#	...
-# ]
-
-# might be useful
-# make_active()
+		self.write_default_profiles()
 
 #################################################################
 #								#
@@ -90,8 +65,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		# check if the profile was found
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		# get kias
@@ -203,8 +177,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				break
 
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		if profile['gear-retractable'] == "true":
@@ -232,8 +205,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				break
 
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		if profile['gear-retractable'] == "true":
@@ -866,6 +838,232 @@ class FlightGearCopilotSkill(MycroftSkill):
 		sleep(2)
 		self.speak("Flight controls checked")
 
+#################################################################
+#								#
+#			Configuration				#
+#								#
+#################################################################
+
+	@intent_handler(IntentBuilder('FlightGearPortIntent').require('conf.flightgear.port'))
+	def handle_flight_gear_port_intent(self, message):
+		port = normalize(message.data['utterance'])
+		port = re.sub('\D', '', port)
+
+		if int(port) < 0 or int(port) > 65535:
+			self.speak("Port '" + str(port) + "' out of range")
+			sys.exit(0)
+
+		self.settings['port'] = int(port)
+
+		self.speak("I will use now port " + str(port) + " to connect to flightgear")
+
+	@intent_handler(IntentBuilder('AddToProfileIntent').require('conf.add.to.profile'))
+	def handle_add_to_profile_intent(self, message):
+		tn = self.connect()
+
+		# re to get the profile name
+		match = re.search("profile .*$", message.data['utterance'], re.I)
+		if match == None:
+			self.speak("I didn't understand a profile name")
+			self.exit(tn)
+
+		# remove 'profile '
+		profile = re.sub("profile ", '', match.group(0))
+
+		profile_id = 0
+
+		# check if profile exists
+		for i_profile in self.settings['profiles']:
+			match = re.search(i_profile['name'], profile, re.I)
+			if match != None:
+				break
+
+			profile_id = profile_id + 1
+
+		# get acid
+                acid = self.get_prop(tn, "/sim/aircraft")
+
+		# check if acid exists in the profile
+		for i_acid in i_profile['acid']:
+			if i_acid == acid:
+				self.speak("The Aircraft ID does already exsists in this profile")
+				self.exit(tn)
+
+		# add acid to profile
+		self.settings['profiles'][profile_id]['acid'].append(acid)
+		self.speak("Added the aircraft to the profile")
+
+	@intent_handler(IntentBuilder('CreateProfileIntent').require('conf.create.profile'))
+	def handle_create_profile_intent(self, message):
+		tn = self.connect()
+		profile = {}
+
+		# re to get the profile name
+		match = re.search("profile .*$", message.data['utterance'], re.I)
+		if match == None:
+			self.speak("I didn't understand a profile name")
+			self.exit(tn)
+
+		# remove 'profile '
+		profile['name'] = re.sub("profile ", "", match.group(0))
+		
+		# get acid
+		profile['acid'] = []
+		profile['acid'].append(self.get_prop(tn, "/sim/aircraft"))
+
+		# ask user if the gear is retractable
+		self.speak("Has this aircraft a retractable gear?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		if response != None:
+			match = re.search("yes|affirm|ok", response, re.I)
+			if match != None:
+				profile['gear_retractable'] = "true"
+			else:
+				profile['gear_retractable'] = "false"
+
+		# TODO find flaps path
+		profile['flaps-path'] = "/controls/flight/flap-lever"
+
+		profile['flaps'] = []
+		flaps = {}
+		flaps['value'] = "Never occuring value"
+
+		# make sure the flaps are fully up
+		for i in range(0, 10):
+			self.nasal_exec(tn, "controls.flapsDown(-1);")
+
+		# scan a maximum of 10 flaps positions... should be enough for every plane
+		for i in range(0,10):
+			# if the flaps pos is the same as with the previous step, then break
+			if self.get_prop(tn, profile['flaps-path']) == flaps['value']:
+				break
+			flaps = {}
+			# ask the user how to name the flaps positions
+			self.speak("How to name the current flaps position?")
+			while True:
+				wait_while_speaking()
+				response = self.get_response("dummy")
+
+				# extracting the flaps setting from the response
+				match = re.match(r'.*(up|full|down|\d{1,2}).*', response, re.I)
+				if match != None:
+					flaps['id'] = match.group(1)
+					break
+				self.speak_dialog("no.valid.flaps")
+				self.speak("Please repeat")
+
+			flaps['value'] = self.get_prop(tn, profile['flaps-path'])
+			flaps['min-spd'] = 0
+			flaps['max-spd'] = 999
+			profile['flaps'].append(flaps)
+			self.nasal_exec(tn, "controls.flapsDown(1);")
+
+		# ask if the user wants to add speeds for the flaps settings
+		self.speak("Do you want to add speeds for the flaps settings?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		if response != None:
+			match = re.search("yes|affirm|ok", response, re.I)
+			if match != None:
+				for flaps in profile['flaps']:
+					self.speak("What's the maximum speed with flaps " + str(flaps['id']) + "?")
+					while True:
+						wait_while_speaking()
+						response = self.get_response("dummy")
+						if response != None:
+							match = re.search("\d{1,4}", response)
+							if match != None:
+								flaps['max-spd'] = match.group(0)
+								break
+						self.speak("I didn't understand a valid speed, please repeat")
+
+					self.speak("What's the minimum speed with flaps " + str(flaps['id']) + "?")
+					while True:
+						wait_while_speaking()
+						response = self.get_response("dummy")
+						if response != None:
+							match = re.search("\d{1,4}", response)
+							if match != None:
+								flaps['min-spd'] = match.group(0)
+								break
+						self.speak("I didn't understand a valid speed, please repeat")
+
+		self.settings['profiles'].append(profile)
+		self.speak("Successfully added profile " + profile['name'])
+
+	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
+	def handle_find_flight_gear_intent(self, message):
+		self.speak("Ok, I'm looking for a running flightgear on port " + str(self.settings['port']) + ". This can take a while.")
+
+		# check localhost first
+		ip = "127.0.0.1"
+		try:
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			result = sock.connect_ex((ip, self.settings['port']))
+			if result == 0:
+				self.speak("Found an instance on my self, do you want to use this computer?")
+				wait_while_speaking()
+				response = self.get_response("dummy")
+				if response != None:
+					match = re.search("yes|affirm|ok", response, re.I)
+					if match != None:
+						self.settings['host'] = "localhost"
+						self.speak("New host " + self.settings['host'] + " is set")
+						sys.exit()
+
+				self.speak("Ok, I continue to search")
+			sock.close()
+
+		except socket.error:
+			pass
+
+		# get network
+		net = self.get_ip()
+		net = re.sub("\d[1-3]$", '', net)
+
+		# scan network
+		for host_part in range(1, 255):
+			ip = net + str(host_part)
+			try:
+				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				result = sock.connect_ex((ip, self.settings['port']))
+				if result == 0:
+					# if a connection is found, ask user if it's the correct one
+					try:
+						(host, dummy, dummy) = socket.gethostbyaddr(ip)
+						host = socket.getfqdn(host)
+					except socket.gaierror:
+						pass
+					self.speak("Found an instance on " + host + ", do you want to use this computer?")
+					wait_while_speaking()
+					response = self.get_response("dummy")
+					if response != None:
+						match = re.search("yes|affirm|ok", response, re.I)
+						if match != None:
+							self.settings['host'] = host
+							self.speak("New host " + self.settings['host'] + " is set")
+							sys.exit()
+
+					self.speak("Ok, I continue to search")
+				sock.close()
+
+			except socket.error:
+				pass
+
+		self.speak("I haven't found any running flightgear on port " + str(self.settings['port']))
+
+	# load the default profile config
+	@intent_handler(IntentBuilder('Load DefaultProfilesIntent').require('load.default.profile'))
+	def handle_load_default_profile_intent(self, message):
+		self.speak("This will remove all profiles what you have added. Do you want to continue?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		if response != None:
+			match = re.search("yes|affirm|ok", response, re.I)
+			if match != None:
+				self.write_default_profiles()
+				self.speak("Profiles reseted")
 
 #################################################################
 #								#
@@ -912,6 +1110,161 @@ class FlightGearCopilotSkill(MycroftSkill):
 		ret = ret - 1
 		tn.write("cd /\r\n")
 		return ret
+
+	# get ip address
+	def get_ip(self):
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		try:
+			# doesn't even have to be reachable
+			s.connect(('10.255.255.255', 1))
+			IP = s.getsockname()[0]
+		except:
+			IP = '127.0.0.1'
+		finally:
+			s.close()
+		return IP
+
+	# write the defaults to the settings.json file
+	def write_default_profiles(self):
+
+# DEFINITION of the settings['profiles'] structure
+# [
+#	{
+#		"name": "<profile-name>",
+#		"acid":
+#		[
+#			"<Aircraft-id> can be found in /???",
+#			...
+#		],
+#		flaps:
+#		[
+#			{
+#				"id": "<flaps-name> can be up|down|full|number",
+#				"min-spd": "<minimum speed for save retraction>",
+#				"max-spd": "<maximum speed for save extention>",
+#				"value": "<value in the prop tree>"
+#			},
+#			...
+#		]
+#		"flaps-path": "<path to current flaps-position>"
+#		"gear-retractable": "<true|false>"
+#	},
+#	...
+# ]
+		profiles = []
+
+		#################
+		# Airbus A320	#
+		#################
+		profile = {}
+		profile['name'] = "Airbus A320"
+		profile['gear-retractable'] = "true"
+		profile['flaps-path'] = "/controls/flight/flap-lever"
+
+		# ACIDs
+		profile['acid'] = []
+		profile['acid'].append("A320-200-CFM")
+		profile['acid'].append("A320-200-IAE")
+		profile['acid'].append("A320-100-CFM")
+		profile['acid'].append("A320neo-CFM")
+		profile['acid'].append("A320neo-PW")
+
+		# Flaps settings
+		profile['flaps'] = []
+
+		# Flaps up
+		flaps = {}
+		flaps['id'] = "up"
+		flaps['min-spd'] = 210
+		flaps['max-spd'] = 350
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 1
+		flaps = {}
+		flaps['id'] = 1
+		flaps['min-spd'] = 180
+		flaps['max-spd'] = 230
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 2
+		flaps = {}
+		flaps['id'] = 2
+		flaps['min-spd'] = 165
+		flaps['max-spd'] = 200
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 3
+		flaps = {}
+		flaps['id'] = 3
+		flaps['min-spd'] = 150
+		flaps['max-spd'] = 185
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps full
+		flaps = {}
+		flaps['id'] = "full"
+		flaps['min-spd'] = 140
+		flaps['max-spd'] = 177
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		profiles.append(profile)
+
+		#################
+		# c172p		#
+		#################
+		profile = {}
+		profile['name'] = "c172p"
+		profile['gear-retractable'] = "false"
+		profile['flaps-path'] = "/controls/flight/flaps"
+
+		# ACIDs
+		profile['acid'] = []
+		profile['acid'].append("c172p")
+
+		# Flaps settings
+		profile['flaps'] = []
+
+		# Flaps up
+		flaps = {}
+		flaps['id'] = "up"
+		flaps['min-spd'] = 54
+		flaps['max-spd'] = 300
+		flaps['value'] = 0
+		profile['flaps'].append(flaps)
+
+		# Flaps 10
+		flaps = {}
+		flaps['id'] = 10
+		flaps['min-spd'] = 48
+		flaps['max-spd'] = 110
+		flaps['value'] = 0.3333334
+		profile['flaps'].append(flaps)
+
+		# Flaps 20
+		flaps = {}
+		flaps['id'] = "20"
+		flaps['min-spd'] = 43
+		flaps['max-spd'] = 85
+		flaps['value'] = 0.6666668
+		profile['flaps'].append(flaps)
+
+		# Flaps full
+		flaps = {}
+		flaps['id'] = "full"
+		flaps['min-spd'] = 43
+		flaps['max-spd'] = 85
+		flaps['value'] = 1
+		profile['flaps'].append(flaps)
+
+		profiles.append(profile)
+
+		self.settings['profiles'] = profiles
+		pass
 
 	# exit routine to properly close the tn con
 	def exit(self, tn):
