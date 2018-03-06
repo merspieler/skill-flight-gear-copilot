@@ -65,8 +65,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		# check if the profile was found
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		# get kias
@@ -178,8 +177,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				break
 
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		if profile['gear-retractable'] == "true":
@@ -207,8 +205,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 				break
 
 		if profile == None:
-			# TODO when creation of profiles via voice is possible, add dialog how to
-			self.speak("Profile not found")
+			self.speak_dialog("no.profile")
 			self.exit(tn)
 
 		if profile['gear-retractable'] == "true":
@@ -899,6 +896,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 	@intent_handler(IntentBuilder('CreateProfileIntent').require('conf.create.profile'))
 	def handle_create_profile_intent(self, message):
 		tn = self.connect()
+		profile = {}
 
 		# re to get the profile name
 		match = re.search("profile \.*$", message.data['utterance'], re.I)
@@ -907,26 +905,80 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.exit(tn)
 
 		# remove 'profile '
-		profile = re.sub("profile ", '', match)
-
+		profile['name'] = re.sub("profile ", '', match)
+		
 		# get acid
-		acid = self.get_prop(tn, "/sim/aircraft")
+		profile['acid'] = []
+		profile['acid'].append(self.get_prop(tn, "/sim/aircraft"))
 
 		# ask user if the gear is retractable
 		self.speak("Has this aircraft a retractable gear?")
 		wait_while_speaking()
 		response = self.get_response("dummy")
-		gear_retractable = "false"
 		if response != None:
-			match = re.search("yes|afirm|ok", response, re.I)
+			match = re.search("yes|affirm|ok", response, re.I)
 			if match != None:
-				gear_retractable = "true"
+				profile['gear_retractable'] = "true"
+			else:
+				profile['gear_retractable'] = "false"
 
 		# TODO find flaps path
-		# TODO scan flaps
-			# TODO ask the user how to name the flaps positions
 
-		# TODO ask if user wants to add speeds for the flaps settings
+		profile['flaps'] = []
+
+		# scan a maximum of 10 flaps positions... should be enough for every plane
+		for i in range(0,10):
+			# if the flaps pos is the same as with the previous step, then break
+			if self.get_prop(tn, profile['flaps-path']) == flaps['value']:
+				break
+			flaps = {}
+			# ask the user how to name the flaps positions
+			self.speak("How to name the current flaps position?")
+			while True:
+				wait_while_speaking()
+				response = self.get_response("dummy")
+
+				# extracting the flaps setting from the response
+				match = re.match(r'.*(up|full|down|\d{1,2}).*', flaps_request, re.I)
+				if match != None:
+					flaps['id'] = match.group(1)
+					break
+				self.speak_dialog("no.valid.flaps")
+				self.speak("Please repeat")
+
+			flaps['value'] = self.get_prop(tn, profile['flaps-path'])
+			profile['flaps'].append(flaps)
+			self.nasal_exec(tn, "controls.flapsDown(1);")
+
+		# ask if the user wants to add speeds for the flaps settings
+		self.speak("Do you want to add speeds for the flaps settings?")
+		wait_while_speaking()
+		response = self.get_response("dummy")
+		if response != None:
+			match = re.search("yes|affirm|ok", response, re.I)
+			if match != None:
+				for flaps in profile['flaps']:
+					self.speak("What's the maximum speed with flaps " + str(flaps['id']) + "?")
+					while True:
+						wait_while_speaking()
+						response = self.get_response("dummy")
+						if response != None:
+							match = re.search("\d{1,4}", response)
+							if match != None:
+								flaps['max-spd'] = match.group(0)
+								break
+						self.speak("I didn't understand a valid speed, please repeat")
+
+					self.speak("What's the minimum speed with flaps " + str(flaps['id']) + "?")
+					while True:
+						wait_while_speaking()
+						response = self.get_response("dummy")
+						if response != None:
+							match = re.search("\d{1,4}", response)
+							if match != None:
+								flaps['min-spd'] = match.group(0)
+								break
+						self.speak("I didn't understand a valid speed, please repeat")
 
 	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
 	def handle_find_flight_gear_intent(self, message):
@@ -1108,8 +1160,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 		# Flaps settings
 		profile['flaps'] = []
 
-		# TODO use real min speeds
-
 		# Flaps up
 		flaps = {}
 		flaps['id'] = "up"
@@ -1166,8 +1216,6 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		# Flaps settings
 		profile['flaps'] = []
-
-		# TODO use real speeds
 
 		# Flaps up
 		flaps = {}
