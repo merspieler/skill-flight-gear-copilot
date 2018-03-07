@@ -28,8 +28,8 @@ Before editing the `settings.json` file, make sure to stop mycroft.
                               "value": "<value in the prop tree>"
                       },
                       "..."
-              ]
-              "flaps-path": "<path to current flaps-position>"
+              ],
+              "flaps-path": "<path to current flaps-position>",
               "gear-retractable": "<true|false>"
       },
       "..."
