@@ -33,4 +33,5 @@ Before editing the `settings.json` file, make sure to stop mycroft.
               "gear-retractable": "<true|false>"
       },
       ...
-]```
+]
+```
