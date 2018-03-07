@@ -17,9 +17,9 @@ Before editing the `settings.json` file, make sure to stop mycroft.
               "acid":
               [
                       "<Aircraft-id> Can be found in /sim/aircraft",
-                      ...
+                      "..."
               ],
-              flaps:
+              "flaps":
               [
                       {
                               "id": "<flaps-name> can be up|down|full|number",
@@ -27,11 +27,11 @@ Before editing the `settings.json` file, make sure to stop mycroft.
                               "max-spd": "<maximum speed for save extention>",
                               "value": "<value in the prop tree>"
                       },
-                      ...
+                      "..."
               ]
               "flaps-path": "<path to current flaps-position>"
               "gear-retractable": "<true|false>"
       },
-      ...
+      "..."
 ]
 ```
