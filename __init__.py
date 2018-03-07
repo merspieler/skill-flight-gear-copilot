@@ -262,14 +262,14 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("No checklists has been found")
 			self.exit(tn)
 
-		for i in range(0, checklist_count - 1):
+		for i in range(0, checklist_count):
 			checklist = i
 			checklist_title = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/title")
 			checklist_title = checklist_title.replace('/', '|')
 			match = re.search(re.escape(checklist_title), cl_request, re.I)
 
 			if match != None:
-				self.speak("Checklist found")
+				self.speak(checklist_title + " checklist")
 				break
 
 		if match == None:
@@ -287,7 +287,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			self.speak("The required checklist has no entrys")
 			self.exit(tn)
 
-		for i in range(0, item_count - 1):
+		for i in range(0, item_count):
 			item = i
 			item_name = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/name")
 			item_value = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/" + page + "item[" + str(item) + "]/value")
@@ -301,17 +301,18 @@ class FlightGearCopilotSkill(MycroftSkill):
 				sys.exit(0)
 
 			# check if F/O has to confirm as well
-			item_value_check = re.sub("(BOTH)", "", item_value, flags=re.I) # Add more indication of this case, that are used in other A/C
+			item_value_check = re.sub("\(BOTH\)", "", item_value, flags=re.I) # Add more indication of this case, that are used in other A/C
 			fo_conf = 0
 			if item_value_check != item_value:
 				fo_conf = 1
 				item_value = item_value_check
 
 			item_value = self.expand_adverbations(item_value)
-			item_value = item_value.replace('/', '|')
-			item_value = item_value.replace('_', '')
-			item_value = item_value.replace('(', ' ')
-			item_value = item_value.replace(')', ' ')
+			item_value = re.sub('/', '|', item_value)
+			item_value = re.sub('_', '', item_value)
+			item_value = re.sub('\(', ' ', item_value)
+			item_value = re.sub('\)', ' ', item_value)
+			response = self.expand_adverbations(response)
 			match = re.search(item_value, response, re.I)
 
 			if match == None:
@@ -320,6 +321,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 			if fo_conf == 1:
 				self.speak(item_value)
+
+		self.speak(checklist_title + " checklist completed")
 
         @intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
         def handle_securing_check_intent(self, message):
@@ -417,15 +420,15 @@ class FlightGearCopilotSkill(MycroftSkill):
 		text = re.sub("A/SKID", "anti skid", text, flags=re.I)
 		text = re.sub("N/W", "nose weel", text, flags=re.I)
 		text = re.sub("A/THR", "auto thrust", text, flags=re.I)
-		text = re.sub("THR", "thrust", text, flags=re.I)
-		text = re.sub("Eng", "engine", text, flags=re.I)
+		text = re.sub(" THR ", "thrust", text, flags=re.I)
+		text = re.sub("Eng ", "engine", text, flags=re.I)
 		text = re.sub("Mstr", "master", text, flags=re.I)
 		text = re.sub("PB", "push button", text, flags=re.I)
 		text = re.sub("man", "manual", text, flags=re.I)
 		text = re.sub("FLT", "flight", text, flags=re.I)
 		text = re.sub("INST", "instruments", text, flags=re.I)
 		text = re.sub("TEMP", "temperature", text, flags=re.I)
-		text = re.sub("LT", "light", text, flags=re.I)
+		text = re.sub(" LT", "light", text, flags=re.I)
 		text = re.sub("SEL", "selector", text, flags=re.I)
 		text = re.sub("LDG", "landing", text, flags=re.I)
 		text = re.sub("MDA", "minimum decent altitude", text, flags=re.I)
@@ -434,6 +437,13 @@ class FlightGearCopilotSkill(MycroftSkill):
 		text = re.sub("FLX", "flex", text, flags=re.I)
 		text = re.sub("EMER", "emergency", text, flags=re.I)
 		text = re.sub("BRK", "break", text, flags=re.I)
+		text = re.sub("KG", "kilogram", text, flags=re.I)
+		text = re.sub("LB", "pounds", text, flags=re.I)
+		text = re.sub("LBS", "pounds", text, flags=re.I)
+		text = re.sub("AS RQRD", "on|set|off|normal", text, flags=re.I) # since we don't know, what is needed in the current situation
+		text = re.sub("CONF", "config", text, flags=re.I)
+		text = re.sub(" OR ", "|", text, flags=re.I)
+		text = re.sub("0", "zero", text, flags=re.I)
 		return text
 
 	# exit routine to properly close the tn con
