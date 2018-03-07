@@ -5,8 +5,6 @@ Copilot for FlightGear
 This skill acts as an copilot for flight gear that assists you by following your voice commands.
 
 This skill is still under active development.  
-Currently in work:
-* Rework of the checklist system
 
 ## Requirements
 FlightGear version 2018.1 or above.  
