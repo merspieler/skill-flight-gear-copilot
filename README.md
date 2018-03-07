@@ -26,4 +26,6 @@ FlightGear needs to be started with telnet (port 8081 is used as default in the 
 * IDG-A32X
 * Cessna 172p
 
+_If you have created a profile for an aircraft, feel free to submit it eigther doing the changes in the code and opening a pull request or by opening an issue and attatching your settings.json  file_
+
 ## Credits 
