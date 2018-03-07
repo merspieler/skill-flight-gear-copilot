@@ -266,7 +266,8 @@ class FlightGearCopilotSkill(MycroftSkill):
 			checklist = i
 			checklist_title = self.get_prop(tn, "/sim/checklists/checklist[" + str(checklist) + "]/title")
 			checklist_title = checklist_title.replace('/', '|')
-			match = re.search(re.escape(checklist_title), cl_request, re.I)
+			checklist_title = "^" + checklist_title
+			match = re.search(checklist_title, cl_request, re.I)
 
 			if match != None:
 				self.speak(checklist_title + " checklist")
