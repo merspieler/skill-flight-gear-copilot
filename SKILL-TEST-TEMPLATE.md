@@ -13,7 +13,7 @@ The purpose of this template is to help a Mycroft Community Skill Developer outl
 To install just say `Hey Mycroft, install flightgear copilot`
 
 ## Setting up flightgear
-Make sure, you use Flightgear version 2018.1 or above.
+_Make sure, you use Flightgear version 2018.1 or above._  
 Add to the command line options:
 * `--telnet=8081` Any other port can used but then the skill needs to be reconfigured with `Set flightgear port <your port>`.
 * `--allow-nasal-from-sockets`
@@ -46,22 +46,24 @@ _Flightgear must run at all time for this skill to work_
 * Open the checklist dialog in flightgear ('help'->'aircraft checklist').
 * Choose a checklist.
 * Say `<Checklist-name> checklist` where `<Checklist-name>` is the checklist you've choosen.
-* Mycroft will start to go though the checklist. Confirm each item with the response that's in the checklist window on the right side.  
+* Mycroft will start to go though the checklist. Confirm each item with the response that's on the right side in the checklist window .  
 	Expected result: Mycroft continues with the checklist until it says `<Checklist-name> checklist completed`
 
 _Note that sometimes mycroft might not understand you correct. Please check that before you open an issue_
 
-4. Test non default aircraft
-4.1
-* Start flightgear with your aircraft of choise on the runway.
-* Say `Flaps 1`  
-	Expected result: Mycroft responses that no profile was found.
-* Say `Create aircraft profile <profile-name>` where `<profile-name>` is the name for the profile.
-* Follow the guide through the creation of the profile.
-* Test your profile like in step 2 (ofcourse adapted to your aircraft).
-4.2
-* Start flightgear with a differen variant to the aircraft.
-* Say `Flaps 1`  
-	Expected result: Mycroft responses that no profile was found.
-* Say `Add aircraft to profile <profile-name>` where `<profile-name>` is the same profile name as in step 4.1.
-* Test your profile like in step 2 (ofcourse adapted to your aircraft).
+4. Test non default aircraft  
+ 4.1
+  * Start flightgear with your aircraft of choise on the runway.
+  * Say `Flaps 1`  
+   Expected result: Mycroft responses that no profile was found.
+  * Say `Create aircraft profile <profile-name>` where `<profile-name>` is the name for the profile.
+  * Follow the guide through the creation of the profile.
+  * Test your profile like in step 2 (of course adapted to your aircraft).
+
+
+ 4.2 
+  * Start flightgear with a differen variant to the aircraft.
+  * Say `Flaps 1`  
+   Expected result: Mycroft responses that no profile was found.
+  * Say `Add aircraft to profile <profile-name>` where `<profile-name>` is the same profile name as in step 4.1.
+  * Test your profile like in step 2 (of course adapted to your aircraft).
