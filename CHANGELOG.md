@@ -17,10 +17,12 @@ tags:
 
 ## v0.2 (unreleased)
 ### Added
-* Configuration of the aircraft profiles via voice commands
+* Configuration of the aircraft profiles via voice commands.
+### Changed
+* Reworked checklist system: The checklists from flightgear are used now.
 ### Fixed
 * A spoken `one` is always interpreted correct.
-* The C172p profile is complete
+* The C172p profile is complete.
 
 ## [v0.1](https://github.com/merspieler/flight-gear-copilot/releases/tag/v0.1)
 Initial release.
