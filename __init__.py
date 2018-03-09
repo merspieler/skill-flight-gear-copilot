@@ -797,9 +797,19 @@ class FlightGearCopilotSkill(MycroftSkill):
 		text = re.sub("LB", "pounds", text, flags=re.I)
 		text = re.sub("LBS", "pounds", text, flags=re.I)
 		text = re.sub("AS RQRD", "on|set|off|normal", text, flags=re.I) # since we don't know, what is needed in the current situation
+		text = re.sub("AS REQUIRED", "on|set|off|normal", text, flags=re.I) # since we don't know, what is needed in the current situation
 		text = re.sub("CONF", "config", text, flags=re.I)
 		text = re.sub(" OR ", "|", text, flags=re.I)
 		text = re.sub("0", "zero", text, flags=re.I)
+		text = re.sub("GEN ", "generator", text, flags=re.I)
+		text = re.sub("POS ", "position", text, flags=re.I)
+		text = re.sub(" IAS", "indicated air speed", text, flags=re.I)
+		text = re.sub("RWY", "runway", text, flags=re.I)
+		text = re.sub("HDG", "heading", text, flags=re.I)
+		text = re.sub("HDG", "heading", text, flags=re.I)
+		text = re.sub("GND ", "ground", text, flags=re.I)
+		text = re.sub("APPR ", "approach", text, flags=re.I)
+		text = re.sub("FREQ ", "frequency", text, flags=re.I)
 		return text
 
 	# exit routine to properly close the tn con
