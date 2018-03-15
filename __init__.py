@@ -286,8 +286,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			item_value = self.expand_adverbations(item_value)
 			item_value = re.sub('/', '|', item_value)
 			item_value = re.sub('_', '', item_value)
-			item_value = re.sub('\(', ' ', item_value)
-			item_value = re.sub('\)', ' ', item_value)
+			item_value = re.sub('\(.*\)', ' ', item_value)
 			response = self.expand_adverbations(response)
 			match = re.search(item_value, response, re.I)
 
@@ -812,6 +811,9 @@ class FlightGearCopilotSkill(MycroftSkill):
 		text = re.sub("GND ", "ground", text, flags=re.I)
 		text = re.sub("APPR ", "approach", text, flags=re.I)
 		text = re.sub("FREQ ", "frequency", text, flags=re.I)
+		text = re.sub("STD ", "standart", text, flags=re.I)
+		text = re.sub("AFT ", "after", text, flags=re.I)
+		text = re.sub("FWD ", "foreward", text, flags=re.I)
 		return text
 
 	# exit routine to properly close the tn con
