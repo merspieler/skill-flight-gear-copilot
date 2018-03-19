@@ -72,3 +72,5 @@ _Note that sometimes mycroft might not understand you correct. Please check that
       Expected result: Mycroft responses that no profile was found.
     * Say `Add aircraft to profile <profile-name>` where `<profile-name>` is the same profile name as in step 4.1.
     * Test your profile like in step 2 (of course adapted to your aircraft).
+
+_**Note**: Please add all available variants to the profile and open an [issue](https://github.com/merspieler/flight-gear-copilot/issues) with your settings.json file so i can add your aircraft profile to the default profiles_
