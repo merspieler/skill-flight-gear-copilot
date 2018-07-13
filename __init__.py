@@ -299,27 +299,27 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 		self.speak(checklist_title + " checklist completed")
 
-        @intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
-        def handle_securing_check_intent(self, message):
-                self.speak("Full up")
-                sleep(2)
-                self.speak("Full down")
-                sleep(2)
-                self.speak("Neutral")
-                sleep(2)
-                self.speak("Full left")
-                sleep(2)
-                self.speak("Full right")
-                sleep(2)
-                self.speak("Neutral")
-                sleep(2)
-                self.speak("Full left")
-                sleep(4)
-                self.speak("Full right")
-                sleep(4)
-                self.speak("Neutral")
-                sleep(2)
-                self.speak("Flight controls checked")
+	@intent_handler(IntentBuilder('FlightControlCheckIntent').require('flight.control.check'))
+	def handle_securing_check_intent(self, message):
+		self.speak("Full up")
+		sleep(2)
+		self.speak("Full down")
+		sleep(2)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Full left")
+		sleep(2)
+		self.speak("Full right")
+		sleep(2)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Full left")
+		sleep(4)
+		self.speak("Full right")
+		sleep(4)
+		self.speak("Neutral")
+		sleep(2)
+		self.speak("Flight controls checked")
 
 #################################################################
 #								#
@@ -364,7 +364,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 			profile_id = profile_id + 1
 
 		# get acid
-                acid = self.get_prop(tn, "/sim/aircraft")
+		acid = self.get_prop(tn, "/sim/aircraft")
 
 		# check if acid exists in the profile
 		for i_acid in i_profile['acid']:
@@ -506,7 +506,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 		net = re.sub("\d[1-3]$", '', net)
 
 		# scan network
-		for host_part in range(1, 255):
+		for host_part in range(1, 254):
 			ip = net + str(host_part)
 			try:
 				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
