@@ -40,7 +40,7 @@ _Note that sometimes mycroft might not understand you correct. Please check that
     * Say `Flaps up`  
       Expected result: `Flaps up` and flaps should be retracted.
     * Say `Gear up`  
-      Expected result: Mycroft tells you, that it can't retract the flaps.
+      Expected result: Mycroft tells you, that it can't retract the gear.
     * Take off and accelerate to >100kn. Retract the flaps.
     * Say `Flaps 20`  
       Expected result: Get a notice that the speed is too high and flaps stay retracted.
@@ -73,4 +73,4 @@ _Note that sometimes mycroft might not understand you correct. Please check that
     * Say `Add aircraft to profile <profile-name>` where `<profile-name>` is the same profile name as in step 4.1.
     * Test your profile like in step 2 (of course adapted to your aircraft).
 
-_**Note**: Please add all available variants to the profile and open an [issue](https://github.com/merspieler/flight-gear-copilot/issues) with your settings.json file so i can add your aircraft profile to the default profiles_
+_**Note**: Please add all available variants to the profile and open an [issue](https://gitlab.com/merspieler/flight-gear-copilot/issues) with your settings.json file so i can add your aircraft profile to the default profiles_
