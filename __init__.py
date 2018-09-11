@@ -477,7 +477,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 
 	@intent_handler(IntentBuilder('FindFlightGearIntent').require('conf.find.fg'))
 	def handle_find_flight_gear_intent(self, message):
-		self.speak("Ok, I'm looking for a running flightgear on port " + str(self.settings['port']) + ". This can take a while.")
+		self.speak("Okay, I'm looking for a running flightgear on port " + str(self.settings['port']) + ". This can take a while.")
 
 		# check localhost first
 		ip = "127.0.0.1"
@@ -495,7 +495,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 						self.speak("New host " + self.settings['host'] + " is set")
 						sys.exit()
 
-				self.speak("Ok, I continue to search")
+				self.speak("Okay, I continue to search")
 			sock.close()
 
 		except socket.error:
@@ -528,7 +528,7 @@ class FlightGearCopilotSkill(MycroftSkill):
 							self.speak("New host " + self.settings['host'] + " is set")
 							sys.exit()
 
-					self.speak("Ok, I continue to search")
+					self.speak("Okay, I continue to search")
 				sock.close()
 
 			except socket.error:
